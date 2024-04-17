@@ -11,11 +11,9 @@ function App() {
         <a href="https://vitejs.dev" target="_blank">
           <img src={viteLogo} className="logo" alt="Vite logo" />
         </a>
-        <a href="https://react.dev" target="_blank">
-       
-        </a>
+        <a href="https://react.dev" target="_blank"></a>
       </div>
-      <h1 className="text-red-500">Elden Ring Quest Tracker</h1>
+      <h1 className="text-3xl text-red-500 font-bold underline">Elden Ring Quest Tracker</h1>
       <div className="card">
         <button onClick={() => setCount((count) => count + 1)}>
           count is {count}
