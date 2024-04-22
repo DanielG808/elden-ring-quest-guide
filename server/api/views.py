@@ -12,7 +12,7 @@ from .serializers import UserSerializer
 
 @api_view(['POST'])
 def login(request):
-    user = get_object_or_404(CustomUser, id=request.data['id'])
+    user = get_object_or_404(CustomUser, username=request.data['username'])
     if not user.check_password(request.data['password']):
         return Response({'detail': 'Not found.'}, status=status.HTTP_404_NOT_FOUND)
     user.save()
@@ -40,3 +40,19 @@ def register(request):
         token = Token.objects.create(user=user)
         return Response({'token': token.key, 'user': serializer.data})
     return Response({'error': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['POST'])
+def logout(request):
+    token = request.headers.get('Authorization').split()[1]
+
+    if token:
+        try:
+            auth_token = Token.objects.get(key=token)
+            user = auth_token.user
+            user.save()
+            auth_token.delete()
+            return Response({'detail': 'Logged out successfully.'})
+        except Token.DoesNotExist:
+            return Response({'detail': 'Token does not exist.'}, status=status.HTTP_404_NOT_FOUND)
+    else:
+        return Response({'detail': 'Token not provided in request headers.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

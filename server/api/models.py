@@ -24,7 +24,7 @@ class Quest(models.Model):
 
 class CustomUser(AbstractUser):
     quest_steps_progress = models.ManyToManyField(QuestStep, through='UserStepProgress', related_name='quest_steps_progress')
-    quests_in_proress = models.ManyToManyField(Quest, through='UserQuestProgress', related_name='quests_in_progress')
+    quests_in_progress = models.ManyToManyField(Quest, through='UserQuestProgress', related_name='quests_in_progress')
     quests_completed = models.ManyToManyField(Quest, through='UserQuestCompleted', related_name='quests_completed')
     bosses_defeated = models.ManyToManyField(Boss, through='UserBossDefeated', related_name='bosses_defeated')
 
