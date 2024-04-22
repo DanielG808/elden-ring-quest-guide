@@ -35,6 +35,7 @@ AUTH_USER_MODEL = 'api.CustomUser'
 # Application definition
 
 INSTALLED_APPS = [
+    'rest_framework.authtoken',
     'api',
     'django.contrib.admin',
     'django.contrib.auth',
