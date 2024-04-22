@@ -56,3 +56,11 @@ def logout(request):
             return Response({'detail': 'Token does not exist.'}, status=status.HTTP_404_NOT_FOUND)
     else:
         return Response({'detail': 'Token not provided in request headers.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['GET'])
+@authentication_classes([SessionAuthentication, TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def test_token(request):
+    return Response("Passed for {}!".format(request.user.username))
+
