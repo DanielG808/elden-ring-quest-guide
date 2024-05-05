@@ -6,6 +6,7 @@ import { Link } from "react-router-dom";
 function Header() {
   // basic use state for mobile menu
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [profileDropdownOpen, setProfileDropdownOpen] = useState(false); // State for profile dropdown
 
   return (
     <header className="bg-blue border-gold border-b shadow-2xl">
@@ -33,27 +34,52 @@ function Header() {
           <Link
             to="/quests"
             target=""
-            className="text-sm font-semibold leading-6 text-gold"
+            className="text-sm font-semibold items-center  leading-6 text-gold"
           >
             Quests
           </Link>
           <Link
             to="/sites-of-grace"
             target=""
-            className="text-sm font-semibold leading-6 text-gold"
+            className="text-sm font-semibold items-center leading-6 text-gold"
           >
             Sites Of Grace
           </Link>
           <Link
             to="/items"
             target=""
-            className="text-sm font-semibold leading-6 text-gold"
+            className="text-sm font-semibold items-center leading-6 text-gold"
           >
             Items
           </Link>
         </div>
+        {/* Profile Dropdown */}
+        <div className="relative">
+          <button
+            onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
+            className="text-sm font-semibold leading-6 text-gold"
+          >
+            Profile
+          </button>
+          {profileDropdownOpen && (
+            <div className="absolute right-0 mt-5 w-48 bg-white border border-gray-200 rounded-lg shadow-md">
+              <Link
+                to="/login"
+                className="block px-4 py-2 text-gray-800 hover:bg-gray-100"
+              >
+                Login
+              </Link>
+              <Link
+                to="/signup"
+                className="block px-4 py-2 text-gray-800 hover:bg-gray-100"
+              >
+                Sign Up
+              </Link>
+            </div>
+          )}
+        </div>
       </nav>
-      {/*  */}
+      {/* Mobile Menu */}
       <Dialog
         as="div"
         className="lg:hidden"
@@ -108,4 +134,5 @@ function Header() {
     </header>
   );
 }
+
 export default Header;
