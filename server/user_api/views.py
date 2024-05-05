@@ -71,4 +71,44 @@ def logout(request):
         return Response({'error': 'Authorization header not provided.'}, status=status.HTTP_400_BAD_REQUEST)
     
 
-    
+class UserView(APIView):
+    @handle_exceptions
+    def get(self, request, token=None):
+        if token:
+            try:
+                auth_token = Token.objects.get(key=token)
+                user = auth_token.user
+                serializer = UserSerializer(user)
+                return Response(serializer.data, status=status.HTTP_200_OK)
+            except Token.DoesNotExist:
+                return Response({'error': 'Token does not exist.'}, status=status.HTTP_404_NOT_FOUND)
+        else:
+            users = User.objects.all()
+            serializer = UserSerializer(users, many=True)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+    @handle_exceptions
+    def put(self, request, token):
+        try:
+            auth_token = Token.objects.get(key=token)
+            user = auth_token.user
+            serializer = UserSerializer(user, data=request.data)
+            if serializer.is_valid():
+                serializer.save()
+                return Response(serializer.data, status=status.HTTP_200_OK)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        except Token.DoesNotExist:
+            return Response({'error': 'Token does not exist.'}, status=status.HTTP_401_UNAUTHORIZED)
+        
+
+    @handle_exceptions
+    def delete(self, request, token):
+        try:
+            auth_token = Token.objects.get(key=token)
+            user = auth_token.user
+            user.delete()
+            return Response({'message': f'User: {user.username} has been deleted.'})
+        except Token.DoesNotExist:
+            return Response({'error': 'Token does not exist.'}, status=status.HTTP_401_UNAUTHORIZED)
+
