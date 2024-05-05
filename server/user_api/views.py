@@ -71,4 +71,22 @@ def logout(request):
         return Response({'error': 'Authorization header not provided.'}, status=status.HTTP_400_BAD_REQUEST)
     
 
+class UserView(APIView):
+    @handle_exceptions
+    def get(self, request, token=None):
+        if token:
+            try:
+                auth_token = Token.objects.get(key=token)
+                user = auth_token.user
+                serializer = UserSerializer(user)
+                return Response(serializer.data, status=status.HTTP_200_OK)
+            except Token.DoesNotExist:
+                return Response({'error': 'Token does not exist.'}, status=status.HTTP_404_NOT_FOUND)
+        else:
+            users = User.objects.all()
+            serializer = UserSerializer(users, many=True)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+
+    
+
     
