@@ -53,7 +53,7 @@ def register(request):
         user.set_password(password)
         user.save()
         token = Token.objects.create(user=user)
-        return Response({'token': token.key, 'user': serializer.data})
+        return Response({'token': token.key}, status=status.HTTP_201_CREATED)
     return Response({'error': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
 
 @api_view(['POST'])
