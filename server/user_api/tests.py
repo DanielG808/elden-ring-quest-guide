@@ -9,35 +9,39 @@ from .serializers import UserSerializer
 from .models import User
 
 
+        
 class TestRegistrationView(TestCase):
     def setUp(self):
         self.client = APIClient()
         self.url = reverse('register')
 
-
-    def test_registration_missing_username(self):
+    def test_registration_view(self):
+        # Test registratrion missing username
         invalid_data = {'username': '', 'password': 'testpassword', 'confirm': 'testpassword'}
         response = self.client.post(self.url, invalid_data, format='json')
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn('error', response.data)
 
-
-    def test_registration_missing_password(self):
+        # Test registratrion missing password
         invalid_data = {'username': 'testuser', 'password': '', 'confirm': 'testpassword'}
         response = self.client.post(self.url, invalid_data, format='json')
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
-
-    def test_registration_password_mismatch(self):
-
+        # Test registratrion password mismatch
         invalid_data = {'username': 'testuser', 'password': 'testpassword', 'confirm': 'wrongpassword'}
         response = self.client.post(self.url, invalid_data, format='json')
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn('error', response.data)
         self.assertEqual(response.data['error'], 'Passwords do not match.')
 
-    def test_registration_success(self):
+    def test_registration_password_mismatch(self):
+        invalid_data = {'username': 'testuser', 'password': 'testpassword', 'confirm': 'wrongpassword'}
+        response = self.client.post(self.url, invalid_data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('error', response.data)
+        self.assertEqual(response.data['error'], 'Passwords do not match.')
 
+    # Test registration success
         data = {'username': 'testuser', 'password': 'TestPassword85!', 'confirm': 'TestPassword85!'}
         response = self.client.post(self.url, data, format='json')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)

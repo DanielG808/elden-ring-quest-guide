@@ -1,5 +1,6 @@
 from rest_framework import status
 from rest_framework.decorators import api_view
+from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.authtoken.models import Token
 from django.shortcuts import get_object_or_404
@@ -7,7 +8,6 @@ from django.http import Http404
 
 from .models import User
 from .serializers import UserSerializer
-
 
 
 def handle_exceptions(func):
@@ -31,7 +31,7 @@ def login(request):
     if not created:
         user.auth_token.delete()
         token = Token.objects.create(user=user)
-    return Response({'token': token.key})
+    return Response({'token': token.key}, status=status.HTTP_200_OK)
 
 
 @api_view(['POST'])
@@ -69,4 +69,6 @@ def logout(request):
         else: return Response({'error': 'Invalid Authorization header format.'}, status=status.HTTP_400_BAD_REQUEST)
     else:
         return Response({'error': 'Authorization header not provided.'}, status=status.HTTP_400_BAD_REQUEST)
+    
+
     
