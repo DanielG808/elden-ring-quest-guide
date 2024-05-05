@@ -87,6 +87,16 @@ class UserView(APIView):
             serializer = UserSerializer(users, many=True)
             return Response(serializer.data, status=status.HTTP_200_OK)
 
-    
 
-    
+    @handle_exceptions
+    def put(self, request, token):
+        try:
+            auth_token = Token.objects.get(key=token)
+            user = auth_token.user
+            serializer = UserSerializer(user, data=request.data)
+            if serializer.is_valid():
+                serializer.save()
+                return Response(serializer.data, status=status.HTTP_200_OK)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        except Token.DoesNotExist:
+            return Response({'error': 'Token does not exist.'}, status=status.HTTP_401_UNAUTHORIZED)
