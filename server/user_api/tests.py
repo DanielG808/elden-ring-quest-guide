@@ -10,88 +10,50 @@ from .models import User
 
 
         
-class TestRegistrationView(TestCase):
+class TestRegAuthView(TestCase):
     def setUp(self):
         self.client = APIClient()
         self.url = reverse('register')
+        self.user_data = {'username': 'test-user-1', 'password': 'test-password-1'}
+        self.user = User.objects.create_user(username='test-user-1', password='test-password-1')
+        self.token = Token.objects.create(user=self.user)
+
 
     def test_registration_view(self):
         # Test registratrion missing username
-        invalid_data = {'username': '', 'password': 'testpassword', 'confirm': 'testpassword'}
+        invalid_data = {'username': '', 'password': 'test-password-1', 'confirm': 'test-password-1'}
         response = self.client.post(self.url, invalid_data, format='json')
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn('error', response.data)
 
         # Test registratrion missing password
-        invalid_data = {'username': 'testuser', 'password': '', 'confirm': 'testpassword'}
+        invalid_data = {'username': 'test-user-2', 'password': '', 'confirm': 'test-password-1'}
         response = self.client.post(self.url, invalid_data, format='json')
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
         # Test registratrion password mismatch
-        invalid_data = {'username': 'testuser', 'password': 'testpassword', 'confirm': 'wrongpassword'}
+        invalid_data = {'username': 'test-user-2', 'password': 'test-password-1', 'confirm': 'wrong-password'}
         response = self.client.post(self.url, invalid_data, format='json')
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn('error', response.data)
         self.assertEqual(response.data['error'], 'Passwords do not match.')
-
-    def test_registration_password_mismatch(self):
-        invalid_data = {'username': 'testuser', 'password': 'testpassword', 'confirm': 'wrongpassword'}
-        response = self.client.post(self.url, invalid_data, format='json')
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertIn('error', response.data)
-        self.assertEqual(response.data['error'], 'Passwords do not match.')
-
-    # Test registration success
-        data = {'username': 'testuser', 'password': 'TestPassword85!', 'confirm': 'TestPassword85!'}
+        
+        # Test registration success
+        data = {'username': 'test-user-2', 'password': 'TestPassword85!', 'confirm': 'TestPassword85!'}
         response = self.client.post(self.url, data, format='json')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertIn('token', response.data)
 
-
-class TestAuthenticationViews(TestCase):
-    def setUp(self):
-        self.client = APIClient()
-        self.user_data = {'username': 'testuser', 'password': 'testpassword'}
-        self.user = User.objects.create_user(username='testuser', password='testpassword')
-        self.token = Token.objects.create(user=self.user)
-
-    # LOGIN TESTS
-
-    def test_login_view_invalid_username(self):
-        url = reverse('login')
-        invalid_data = {'username': 'newuser', 'password': 'wrongpassword'}
-        response = self.client.post(url, invalid_data, format='json')
-        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
-
-
-    def test_login_view_invalid_password(self):
-        url = reverse('login')
-        invalid_data = {'username': 'testuser', 'password': 'wrongpassword'}
-        response = self.client.post(url, invalid_data, format='json')
-        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
-        self.assertIn('error', response.data)
-        self.assertEqual(response.data['error'], 'Not found.' )
-
-
-    def test_login_view_sucess(self):
-        url = reverse('login')
-        data = self.user_data
-        response = self.client.post(url, data, format='json')
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertIn('token', response.data)
-        self.assertEqual(len(response.data['token']), len(self.token.key))
-
-    # LOGOUT TESTS
         
-    def test_logout_view_missing_auth(self):
+    def test_logout_view(self):
+        # Test logout missing auth
         url = reverse('logout')
         response = self.client.post(url)
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn('error', response.data)
         self.assertEqual(response.data['error'], 'Authorization header not provided.')
 
-
-    def test_logout_view_invalid_auth_format(self):
+        # Test logout invalid auth format
         url = reverse('logout')
         self.client.credentials(HTTP_AUTHORIZATION='Authorization')
         response = self.client.post(url)
@@ -99,8 +61,7 @@ class TestAuthenticationViews(TestCase):
         self.assertIn('error', response.data)
         self.assertEqual(response.data['error'], 'Invalid Authorization header format.')
 
-
-    def test_logout_view_invalid_token(self):
+        # Test logout invalid token
         url = reverse('logout')
         self.client.credentials(HTTP_AUTHORIZATION='Authorization FAKE_TOKEN')
         response = self.client.post(url)
@@ -108,11 +69,34 @@ class TestAuthenticationViews(TestCase):
         self.assertIn('error', response.data)
         self.assertEqual(response.data['error'], 'Token does not exist.')
 
-
-    def test_logout_view_success(self):
+        # Test logout success
         url = reverse('logout')
         self.client.credentials(HTTP_AUTHORIZATION=f'Authorization {self.token}')
         response = self.client.post(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertIn('detail', response.data)
         self.assertEqual(response.data['detail'], 'Logged out successfully.')
+
+
+    def test_login_view(self):
+        # Test login invalid username
+        url = reverse('login')
+        invalid_data = {'username': 'newuser', 'password': 'wrongpassword'}
+        response = self.client.post(url, invalid_data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+        # Test login invalid password
+        url = reverse('login')
+        invalid_data = {'username': 'testuser', 'password': 'wrongpassword'}
+        response = self.client.post(url, invalid_data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertIn('error', response.data)
+        self.assertEqual(response.data['error'], 'Not found.')
+
+        # Test login success
+        url = reverse('login')
+        data = self.user_data
+        response = self.client.post(url, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn('token', response.data)
+        self.assertEqual(len(response.data['token']), len(self.token.key))
