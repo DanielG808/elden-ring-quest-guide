@@ -100,3 +100,15 @@ class UserView(APIView):
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         except Token.DoesNotExist:
             return Response({'error': 'Token does not exist.'}, status=status.HTTP_401_UNAUTHORIZED)
+        
+
+    @handle_exceptions
+    def delete(self, request, token):
+        try:
+            auth_token = Token.objects.get(key=token)
+            user = auth_token.user
+            user.delete()
+            return Response({'message': f'User: {user.username} has been deleted.'})
+        except Token.DoesNotExist:
+            return Response({'error': 'Token does not exist.'}, status=status.HTTP_401_UNAUTHORIZED)
+
