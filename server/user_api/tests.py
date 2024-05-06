@@ -81,13 +81,13 @@ class TestRegAuthView(TestCase):
     def test_login_view(self):
         # Test login invalid username
         url = reverse('login')
-        invalid_data = {'username': 'newuser', 'password': 'wrongpassword'}
+        invalid_data = {'username': 'new-user', 'password': 'wrong-password'}
         response = self.client.post(url, invalid_data, format='json')
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
         # Test login invalid password
         url = reverse('login')
-        invalid_data = {'username': 'testuser', 'password': 'wrongpassword'}
+        invalid_data = {'username': 'test-user', 'password': 'wrong-password'}
         response = self.client.post(url, invalid_data, format='json')
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
         self.assertIn('error', response.data)
@@ -100,3 +100,127 @@ class TestRegAuthView(TestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertIn('token', response.data)
         self.assertEqual(len(response.data['token']), len(self.token.key))
+
+
+class TestUserView(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+        self.user1 = User.objects.create(username='user1', password='testpassword')
+        self.user2 = User.objects.create(username='user2', password='testpassword')
+        self.token1 = Token.objects.create(user=self.user1)
+        self.token2 = Token.objects.create(user=self.user2)
+
+
+    def test_get_request(self):
+        # Test GET user success
+        response1 = self.client.get(f'/user/{self.token1}')
+        response2 = self.client.get(f'/user/{self.token2}')
+        serializer1 = UserSerializer(self.user1)
+        serializer2 = UserSerializer(self.user2)
+        self.assertEqual(response1.status_code, status.HTTP_200_OK)
+        self.assertEqual(response2.status_code, status.HTTP_200_OK)
+        self.assertEqual(response1.data, serializer1.data)
+        self.assertEqual(response2.data, serializer2.data)
+
+        # Test GET user invalid token
+        response = self.client.get('/user/INVALID_TOKEN')
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+        # Test GET user server error
+        with patch('user_api.views.UserSerializer') as mock_serializer:
+            mock_serializer.side_effect = Exception('Test exception.')
+            response = self.client.get(f'/user/{self.token2.key}')
+            self.assertEqual(response.status_code, status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        # Test GET all users success
+        expected_data = UserSerializer([self.user1, self.user2], many=True)
+        response = self.client.get('/users')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data, expected_data.data)
+
+        # Test GET all users server error
+        with patch('user_api.views.UserSerializer') as mock_serializer:
+            mock_serializer.side_effect = Exception('Test exception')
+            response = self.client.get('/users')
+            self.assertEqual(response.status_code, status.HTTP_500_INTERNAL_SERVER_ERROR)
+            self.assertIn('error', response.data)
+
+        # Test GET all users empty array
+        self.user1.delete()
+        self.user2.delete()
+        response = self.client.get('/users')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data, [])
+
+    def test_put_request(self):
+        # Test PUT user success
+        data = {
+            'username': 'user-1',
+            'password': 'Testpassword-1'
+        }
+        serializer = UserSerializer(self.user1, data)
+        serializer.is_valid()
+        serializer.save()
+        response = self.client.put(f'/user/{self.token1.key}', data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['username'], serializer.data['username'])
+        self.assertEqual(response.data['password'], serializer.data['password'])
+
+        # Test PUT user invalid token
+        data = {
+            'username': 'user-2',
+            'password': 'Testpassword-2'
+        }
+        serializer = UserSerializer(self.user1, data)
+        serializer.is_valid()
+        serializer.save()
+        response = self.client.put('/user/INVALID_TOKEN', data)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        self.assertNotEqual(response.data, serializer.data)
+
+        # Test PUT user missing username
+        data = {
+            'username': '',
+            'password': 'Testpassword-1'
+        }
+        serializer = UserSerializer(self.user1, data)
+        serializer.is_valid()
+        response = self.client.put(f'/user/{self.token1.key}', data)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.data, serializer.errors)
+
+        # Test PUT user missing password
+        data = {
+            'username': 'user-1',
+            'password': ''
+        }
+        serializer = UserSerializer(self.user1, data)
+        serializer.is_valid()
+        response = self.client.put(f'/user/{self.token1.key}', data)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.data, serializer.errors)
+
+        # Test PUT user server error
+        with patch('user_api.views.UserSerializer') as mock_serializer:
+            mock_serializer.side_effect = Exception('Test exception.')
+            data = {
+                'username': 'user-1',
+                'password': 'Testpassword-1'
+            }
+            response = self.client.put(f'/user/{self.token1.key}', data)
+            self.assertEqual(response.status_code, status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+    def test_delete_request(self):
+        # Test DELETE user invalid token
+        response = self.client.delete('/user/INVALID_TOKEN')
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        self.assertEqual(response.data['error'], 'Token does not exist.')
+
+        # Test DELETE user success
+        response = self.client.delete(f'/user/{self.token1.key}')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['message'], f'User: {self.user1.username} has been deleted.')
+
+        
+
