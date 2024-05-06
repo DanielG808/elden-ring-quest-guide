@@ -111,7 +111,28 @@ class TestUserView(TestCase):
         self.token2 = Token.objects.create(user=self.user2)
         self.users = [self.user1, self.user2]
 
+
     def test_get_request(self):
+        # Test GET user success
+        response1 = self.client.get(f'/user/{self.token1}')
+        response2 = self.client.get(f'/user/{self.token2}')
+        serializer1 = UserSerializer(self.user1)
+        serializer2 = UserSerializer(self.user2)
+        self.assertEqual(response1.status_code, status.HTTP_200_OK)
+        self.assertEqual(response2.status_code, status.HTTP_200_OK)
+        self.assertEqual(response1.data, serializer1.data)
+        self.assertEqual(response2.data, serializer2.data)
+
+        # Test GET user invalid token
+        response = self.client.get('/user/INVALID_TOKEN')
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+        # Test GET user server error
+        with patch('user_api.views.UserSerializer') as mock_serializer:
+            mock_serializer.side_effect = Exception('Test exception.')
+            response = self.client.get(f'/user/{self.token2}')
+            self.assertEqual(response.status_code, status.HTTP_500_INTERNAL_SERVER_ERROR)
+
         # Test GET all users success
         expected_data = UserSerializer([self.user1, self.user2], many=True)
         response = self.client.get('/users')
@@ -124,7 +145,6 @@ class TestUserView(TestCase):
             response = self.client.get('/users')
             self.assertEqual(response.status_code, status.HTTP_500_INTERNAL_SERVER_ERROR)
             self.assertIn('error', response.data)
-
 
         # Test GET all users empty array
         self.user1.delete()
