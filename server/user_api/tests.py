@@ -109,7 +109,6 @@ class TestUserView(TestCase):
         self.user2 = User.objects.create(username='user2', password='testpassword')
         self.token1 = Token.objects.create(user=self.user1)
         self.token2 = Token.objects.create(user=self.user2)
-        self.users = [self.user1, self.user2]
 
 
     def test_get_request(self):
@@ -130,7 +129,7 @@ class TestUserView(TestCase):
         # Test GET user server error
         with patch('user_api.views.UserSerializer') as mock_serializer:
             mock_serializer.side_effect = Exception('Test exception.')
-            response = self.client.get(f'/user/{self.token2}')
+            response = self.client.get(f'/user/{self.token2.key}')
             self.assertEqual(response.status_code, status.HTTP_500_INTERNAL_SERVER_ERROR)
 
         # Test GET all users success
@@ -152,3 +151,66 @@ class TestUserView(TestCase):
         response = self.client.get('/users')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data, [])
+
+    def test_put_request(self):
+        # Test PUT user success
+        data = {
+            'username': 'user-1',
+            'password': 'Testpassword-1'
+        }
+        serializer = UserSerializer(self.user1, data)
+        serializer.is_valid()
+        serializer.save()
+        response = self.client.put(f'/user/{self.token1.key}', data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['username'], serializer.data['username'])
+        self.assertEqual(response.data['password'], serializer.data['password'])
+
+        # Test PUT user invalid token
+        data = {
+            'username': 'user-2',
+            'password': 'Testpassword-2'
+        }
+        serializer = UserSerializer(self.user1, data)
+        serializer.is_valid()
+        serializer.save()
+        response = self.client.put('/user/INVALID_TOKEN', data)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        self.assertNotEqual(response.data, serializer.data)
+
+        # Test PUT user missing username
+        data = {
+            'username': '',
+            'password': 'Testpassword-1'
+        }
+        serializer = UserSerializer(self.user1, data)
+        serializer.is_valid()
+        response = self.client.put(f'/user/{self.token1.key}', data)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.data, serializer.errors)
+
+        # Test PUT user missing password
+        data = {
+            'username': 'user-1',
+            'password': ''
+        }
+        serializer = UserSerializer(self.user1, data)
+        serializer.is_valid()
+        response = self.client.put(f'/user/{self.token1.key}', data)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.data, serializer.errors)
+
+        # Test PUT user server error
+        with patch('user_api.views.UserSerializer') as mock_serializer:
+            mock_serializer.side_effect = Exception('Test exception.')
+            data = {
+                'username': 'user-1',
+                'password': 'Testpassword-1'
+            }
+            serializer = UserSerializer(self.user1, data)
+            serializer.is_valid()
+            response = self.client.put(f'/user/{self.token1.key}', data)
+            self.assertEqual(response.status_code, status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        
+
