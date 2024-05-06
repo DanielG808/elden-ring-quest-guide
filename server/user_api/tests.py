@@ -81,13 +81,13 @@ class TestRegAuthView(TestCase):
     def test_login_view(self):
         # Test login invalid username
         url = reverse('login')
-        invalid_data = {'username': 'newuser', 'password': 'wrongpassword'}
+        invalid_data = {'username': 'new-user', 'password': 'wrong-password'}
         response = self.client.post(url, invalid_data, format='json')
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
         # Test login invalid password
         url = reverse('login')
-        invalid_data = {'username': 'testuser', 'password': 'wrongpassword'}
+        invalid_data = {'username': 'test-user', 'password': 'wrong-password'}
         response = self.client.post(url, invalid_data, format='json')
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
         self.assertIn('error', response.data)
@@ -100,3 +100,35 @@ class TestRegAuthView(TestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertIn('token', response.data)
         self.assertEqual(len(response.data['token']), len(self.token.key))
+
+
+class TestUserView(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+        self.user1 = User.objects.create(username='user1', password='testpassword')
+        self.user2 = User.objects.create(username='user2', password='testpassword')
+        self.token1 = Token.objects.create(user=self.user1)
+        self.token2 = Token.objects.create(user=self.user2)
+        self.users = [self.user1, self.user2]
+
+    def test_get_request(self):
+        # Test GET all users success
+        expected_data = UserSerializer([self.user1, self.user2], many=True)
+        response = self.client.get('/users')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data, expected_data.data)
+
+        # Test GET all users server error
+        with patch('user_api.views.UserSerializer') as mock_serializer:
+            mock_serializer.side_effect = Exception('Test exception')
+            response = self.client.get('/users')
+            self.assertEqual(response.status_code, status.HTTP_500_INTERNAL_SERVER_ERROR)
+            self.assertIn('error', response.data)
+
+
+        # Test GET all users empty array
+        self.user1.delete()
+        self.user2.delete()
+        response = self.client.get('/users')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data, [])
