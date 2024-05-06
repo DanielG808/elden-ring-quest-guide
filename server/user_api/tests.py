@@ -207,10 +207,20 @@ class TestUserView(TestCase):
                 'username': 'user-1',
                 'password': 'Testpassword-1'
             }
-            serializer = UserSerializer(self.user1, data)
-            serializer.is_valid()
             response = self.client.put(f'/user/{self.token1.key}', data)
             self.assertEqual(response.status_code, status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+    def test_delete_request(self):
+        # Test DELETE user invalid token
+        response = self.client.delete('/user/INVALID_TOKEN')
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        self.assertEqual(response.data['error'], 'Token does not exist.')
+
+        # Test DELETE user success
+        response = self.client.delete(f'/user/{self.token1.key}')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['message'], f'User: {self.user1.username} has been deleted.')
 
         
 
