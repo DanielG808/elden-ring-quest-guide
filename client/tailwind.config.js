@@ -4,8 +4,8 @@ export default {
   theme: {
     extend: {},
     colors: {
-      'gold': "#CDAF6B",
-      'blue': "#073036",
+      gold: "#CDAF6B",
+      blue: "#073036",
     },
   },
   plugins: [],
